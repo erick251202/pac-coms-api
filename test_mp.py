@@ -5,7 +5,7 @@ import uuid
 # Start API in background, then run this to test
 import urllib.request
 
-API = "http://127.0.0.1:8000"
+API = "https://pac-coms-api.onrender.com"
 
 def test():
     # Create room

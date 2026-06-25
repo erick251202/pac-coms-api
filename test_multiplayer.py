@@ -3,8 +3,8 @@ import httpx
 import websockets
 import json
 
-API_URL = "http://127.0.0.1:8000"
-WS_URL = "ws://127.0.0.1:8000/ws/room/"
+API_URL = "https://pac-coms-api.onrender.com"
+WS_URL = "wss://pac-coms-api.onrender.com/ws/room/"
 
 async def test_multiplayer():
     print("--- Starting Multiplayer Flow Test ---")

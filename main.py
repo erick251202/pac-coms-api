@@ -46,9 +46,6 @@ app = FastAPI(title="PAC COMS API", version="2.0.0", docs_url="/docs")
 _STATIC_ORIGINS = [
     "https://app.lecoms.com",
     "https://lecoms.com",
-    "http://localhost:3000",
-    "http://localhost:5173",
-    "http://localhost:8000",
 ]
 
 CORS_ORIGINS_ENV = os.getenv("CORS_ORIGIN", "https://app.lecoms.com").split(",")
