@@ -17,7 +17,6 @@ GET  /api/session/{id}  → room state
 GET  /api/keepalive     → no-op endpoint for external keep-alive pings  [BUG #3 FIX]
 WS   /ws/room/{room_id} → real-time game state sync channel
 """
-import os
 import uuid
 import logging
 import urllib.parse
@@ -42,46 +41,17 @@ log = logging.getLogger(__name__)
 # ── App ───────────────────────────────────────────────────────────────────────
 app = FastAPI(title="PAC COMS API", version="2.0.0", docs_url="/docs")
 
-# BUG #6 FIX: Accept any *.vercel.app preview URL + main domain
-_STATIC_ORIGINS = [
-    "https://app.lecoms.com",
-    "https://lecoms.com",
-]
-
-CORS_ORIGINS_ENV = os.getenv("CORS_ORIGIN", "https://app.lecoms.com").split(",")
-
-def _origin_allowed(origin: str) -> bool:
-    """Allow static origins + *.vercel.app subdomains for preview deploys."""
-    if origin in _STATIC_ORIGINS or origin in CORS_ORIGINS_ENV:
-        return True
-    if origin.endswith(".vercel.app"):
-        return True
-    if origin.endswith(".lecoms.com"):
-        return True
-    return False
-
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request as StarletteRequest
-
-class DynamicCORSMiddleware(BaseHTTPMiddleware):
-    """Replace FastAPI's fixed-list CORS with a dynamic allow-all pattern."""
-    async def dispatch(self, request: StarletteRequest, call_next):
-        origin = request.headers.get("origin", "")
-        response = await call_next(request)
-        if _origin_allowed(origin):
-            response.headers["Access-Control-Allow-Origin"] = origin
-            response.headers["Access-Control-Allow-Credentials"] = "true"
-            response.headers["Access-Control-Allow-Methods"] = "*"
-            response.headers["Access-Control-Allow-Headers"] = "*"
-        return response
-
-app.add_middleware(DynamicCORSMiddleware)
-
-# Keep legacy CORSMiddleware for OPTIONS preflight handling
+# CORS fix: single middleware, allow_origins=["*"], credentials=False.
+# The previous dual-middleware setup (DynamicCORSMiddleware + CORSMiddleware)
+# produced both  Access-Control-Allow-Origin: *  AND
+# Access-Control-Allow-Credentials: true  in the same response, which the
+# browser CORS spec rejects as invalid — causing every XHR to fire onerror
+# instantly regardless of server availability.
+# The game sends no cookies or auth headers, so credentials=False is correct.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],          # DynamicCORSMiddleware handles the fine-grained check
-    allow_credentials=False,       # must be False when allow_origins=["*"]
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
